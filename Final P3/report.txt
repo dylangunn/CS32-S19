@@ -1,0 +1,265 @@
+Dylan Gunn
+805112866
+
+Description of the design of my classes:
+
+	For Board:
+		First, I created an integer m_holes to keep track of how many holes there are.  This made it possible to use
+		the correct value in loops in my implementations.
+		Then, I created a structure called Hole to hold its bean count, hole value, and side.
+		Two Hole pointers (holeNorth and holeSouth) were created in order to allow me to create an array of holes and
+		use the pointer to address the correct value in the array.
+		The last thing I created was a Hole pointer called hand that I used to keep track of which hole I had placed the last
+		bean into in sow.  This allows me to easily check to see if the last one was my pot or an empty hole that I could use to capture.
+	
+	For Player:
+		Player was nothing special, all I did in terms of creating members was just to create a string to hold the name of the player.
+		No fancy data structures are used.
+		
+	For Game:
+		In this, I created a pointer to a board and pointers to two players.  These control the moves and changes on the board
+		while the game is being played.  I also created a private Side whosTurn to keep track of the turn. Two bools isOver and hasWinner
+		and Side winner keep code simplified when using status so that I don't have to repeatedly create them in functions.
+		
+Pseudocode:
+	
+	For Board:
+		Constructor:
+			Fix hole and initial bean values if illegal
+			assign m_holes value
+			create north and south Hole arrays
+			repeatedly
+				place values for beans, hole number, and side into all points
+			Fix the pots so number is 0 and beans is 0
+			
+		Sow:
+			If illegal
+				return false
+			take beans from hole into beansHeld
+			set hand to next hole
+			repeatedly until no more beans held
+				put beans in holes in order, update endSide & endHole to each place put beans
+				when no beans left, endSide and endHole will be in last bean's spot
+			return true
+			
+		moveToPot:
+			If hole doesn't exist or is pot
+				return false
+			if side taking from is north
+				if owner is north
+					move from hole specified to north's pot
+				if owner is south
+					move from hole specified to south's pot
+			otherwise (side taking from is north)
+				if owner is north
+					move from hole specified to north's pot
+				if owner is south
+					move from hole specified to south's pot
+					
+		setBeans:
+			If hole doesn't exist, return false
+			if side specified is north
+				update north's hole with value
+			if side specified is south
+				update south's hole with value
+				
+	For Player:
+		Constructor: (every type of player constructor)
+			Assign name
+	
+		HumanPlayer::chooseMove:
+			If no moves available on one of the sides
+				return -1
+			assume move is illegal
+			take in player's desired move
+			if it's legal
+				skip "illegal" loop
+			until the move is legal (this is the "illegal" loop)
+				keep prompting for new move
+			return move
+				
+		BadPlayer::chooseMove:
+			If no moves available on one of the sides
+				return -1
+			Check each hole from 1 -> rightmost until nonempty
+				return first nonempty hole
+			
+	For Game:
+		Constructor:
+			Assign private member variables their values
+		
+		status:
+			If a move is available on both sides
+				not over
+			Otherwise
+				is over
+				move all holes from each side to appropriate pot
+				set the winner to the one with more beans, or if its a tie declare no winner
+		
+		move:
+			If the game is over	
+				return false
+			otherwise
+				if its a player's turn
+					take in a move
+					if there are no more possible moves remaining in the turn,
+						return false
+					sow the beans from desired hole
+					if they finish in their pot
+						give another turn
+					if they finish in an empty hole and the opposite is not empty
+						take beans from both holes and put in their hole
+					turn is over, set it to opponent
+					
+		play:
+			Check the status
+			until the game is over
+				move
+				check status
+				if both players are bots
+					take in input to progress each player's turn
+			if there's a winner
+				congratulate and tell final score
+			if not
+				tell tie
+
+Known bugs:
+
+	None, works fine in testing.
+	
+Test Cases:
+	
+	Testing Board (by eye)
+#include "Board.h"
+#include "Player.h"
+#include "Game.h"
+#include <iostream>
+#include <cassert>
+using namespace std;
+
+int main()
+{
+
+	// ============================================Testing Board===================================================
+	Board b(5, 5);
+	cout << b.beansInPlay(NORTH) << endl;
+	cout << b.totalBeans() << endl;
+	Side s;
+	int d;
+	assert(b.holes() == 5);		// Testing holes
+	assert(b.beans(NORTH, 1) == 5);		// Testing beans
+	assert(b.totalBeans() == 50);		// Testing totalBeans
+	b.sow(NORTH, 3, s, d);
+	for (int i = 0; i <= b.holes(); i++)
+	{
+		cout << b.beans(NORTH, i) << " ";
+	}
+	cout << endl;
+	for (int i = 0; i <= b.holes(); i++)
+	{
+		cout << b.beans(SOUTH, i) << " ";
+	} 
+
+
+	cout << endl << endl;
+	b.setBeans(NORTH, 3, 10);
+	assert(b.beans(NORTH, 3) == 10);		// Testing setBeans
+	cout << b.beansInPlay(NORTH) << endl;
+	cout << b.totalBeans() << endl;
+	for (int i = 0; i <= b.holes(); i++)
+	{
+		cout << b.beans(NORTH, i) << " ";
+	}
+	cout << endl;
+	for (int i = 0; i <= b.holes(); i++)
+	{
+		cout << b.beans(SOUTH, i) << " ";
+	}
+
+	cout << endl << endl;
+	b.sow(NORTH, 3, s, d);
+	cout << b.beansInPlay(NORTH) << endl;
+	cout << b.totalBeans() << endl;
+	for (int i = 0; i <= b.holes(); i++)
+	{
+		cout << b.beans(NORTH, i) << " ";
+	}
+	cout << endl;
+	for (int i = 0; i <= b.holes(); i++)
+	{
+		cout << b.beans(SOUTH, i) << " ";
+	}
+
+	cout << endl << endl;
+	b.sow(SOUTH, 5, s, d);
+	assert(b.beans(SOUTH, 5) == 0);		// Testing sow
+	cout << b.beansInPlay(SOUTH) << endl;
+	cout << b.totalBeans() << endl;
+	for (int i = 0; i <= b.holes(); i++)
+	{
+		cout << b.beans(NORTH, i) << " ";
+	}
+	cout << endl;
+	for (int i = 0; i <= b.holes(); i++)
+	{
+		cout << b.beans(SOUTH, i) << " ";
+	}
+
+	return 0;
+}
+
+	Testing moveToPot:
+#include "Board.h"
+#include "Player.h"
+#include "Game.h"
+#include "Side.h"
+#include <iostream>
+#include <cassert>
+using namespace std;
+
+int main()
+{
+	Board b(1, 1);
+	b.moveToPot(NORTH, 1, NORTH);
+	assert(b.beans(NORTH, 1) == 0 && b.beans(NORTH, 0) == 1 && b.beans(SOUTH, 1) == 1);
+	return 0;
+}
+
+	Testing chooseMove's safety:
+#include "Game.h"
+#include "Player.h"
+#include "Board.h"
+#include "Side.h"
+#include <iostream>
+#include <cassert>
+using namespace std;
+
+int main()
+{
+	HumanPlayer bp1("Louie");
+	HumanPlayer bp2("Vito");
+	Board b(1, 1);
+	b.setBeans(NORTH, 1, 0);
+	Game g(b, &bp1, &bp2);
+	assert(bp1.chooseMove(b, SOUTH) == -1);
+}
+
+
+	Testing Game and BadPlayer:
+#include "Game.h"
+#include "Player.h"
+#include "Board.h"
+#include "Side.h"
+#include <iostream>
+#include <cassert>
+using namespace std;
+
+int main()
+{
+	HumanPlayer bp1("Louie");
+	HumanPlayer bp2("Vito");
+	Board b(3, 1);
+	Game g(b, &bp1, &bp2);
+	g.play();
+	assert(
+}
